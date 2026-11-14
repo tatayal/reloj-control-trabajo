@@ -1,0 +1,996 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <meta name="theme-color" content="#0f172a">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <title>ControlAsistencia Pro — Reloj Checador Laboral</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <style>
+        html, body {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+            background-color: #f8fafc;
+            overflow-x: hidden;
+            max-width: 100vw;
+            -webkit-tap-highlight-color: transparent;
+        }
+        .tabular-nums { font-variant-numeric: tabular-nums; }
+        button, select, input { touch-action: manipulation; }
+        @keyframes slideUp {
+            from { opacity: 0; transform: translateY(1rem); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        .animate-slide-up { animation: slideUp 0.25s ease-out forwards; }
+        @media (prefers-reduced-motion: reduce) {
+            *, *::before, *::after {
+                animation-duration: 0.01ms !important;
+                animation-iteration-count: 1 !important;
+                transition-duration: 0.01ms !important;
+            }
+        }
+    </style>
+</head>
+<body class="text-slate-800 min-h-screen flex flex-col justify-between selection:bg-slate-800 selection:text-white overflow-x-hidden">
+
+    <header class="bg-slate-900 text-white border-b border-slate-800 sticky top-0 z-30 shadow-md">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 h-14 sm:h-16 flex items-center justify-between gap-2">
+            <div class="flex items-center space-x-2.5 min-w-0">
+                <div class="bg-emerald-500/20 border border-emerald-500/40 text-emerald-400 p-1.5 sm:p-2 rounded-xl shrink-0">
+                    <svg aria-hidden="true" class="w-5 h-5 sm:w-6 sm:h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+                        <circle cx="12" cy="12" r="10"></circle>
+                        <polyline points="12 6 12 12 16 14"></polyline>
+                    </svg>
+                </div>
+                <div class="truncate">
+                    <h1 class="font-bold text-base sm:text-lg tracking-tight leading-none truncate">
+                        ControlAsistencia <span class="text-emerald-400">Pro</span>
+                    </h1>
+                    <p class="text-[11px] text-slate-400 mt-0.5 truncate">Terminal de Fichaje Móvil y Web</p>
+                </div>
+            </div>
+
+            <div class="flex items-center space-x-2 shrink-0">
+                <button type="button" onclick="abrirModalPuntualidad()" class="min-h-[38px] px-2.5 sm:px-3 py-1.5 rounded-xl bg-slate-800 hover:bg-slate-700 active:scale-[0.98] text-xs font-semibold text-amber-300 border border-slate-700 inline-flex items-center gap-1.5 transition-all">
+                    <svg aria-hidden="true" class="w-3.5 h-3.5 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round">
+                        <rect x="3" y="11" width="18" height="11" rx="2" ry="2"></rect>
+                        <path d="M7 11V7a5 5 0 0 1 10 0v4"></path>
+                    </svg>
+                    <span>Puntualidad</span>
+                    <span id="header-regla-puntualidad" class="hidden md:inline text-[11px] font-mono text-slate-300 bg-slate-900/80 px-1.5 py-0.5 rounded">09:00 +5m</span>
+                </button>
+            </div>
+        </div>
+    </header>
+
+    <main class="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-8 flex-grow w-full">
+        <div class="grid grid-cols-1 lg:grid-cols-12 gap-5 lg:gap-8">
+
+            <div class="lg:col-span-5 space-y-5">
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 overflow-hidden">
+                    <div class="bg-slate-900 text-white px-4 py-5 sm:p-6 text-center relative">
+                        <p id="fecha-actual" class="text-[11px] sm:text-xs font-medium uppercase tracking-widest text-slate-400 mb-1">Cargando fecha...</p>
+                        <div id="reloj-digital" class="text-4xl sm:text-5xl lg:text-6xl font-extrabold tracking-tight tabular-nums text-white my-1.5">00:00:00</div>
+                        <div class="mt-3.5 flex flex-col items-center justify-center">
+                            <span id="badge-estado" class="inline-flex items-center gap-2 px-3.5 py-1.5 rounded-full text-xs font-semibold bg-slate-800 text-slate-300 border border-slate-700">
+                                <span id="dot-estado" class="w-2.5 h-2.5 rounded-full bg-slate-400"></span>
+                                <span id="texto-estado">Fuera de turno</span>
+                            </span>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 px-4 sm:px-6 py-3.5 border-b border-slate-200">
+                        <p class="text-[10px] sm:text-[11px] font-semibold uppercase tracking-wider text-slate-500">Jornada Activa (Hoy)</p>
+                        <p id="cronometro-jornada" class="text-lg sm:text-xl font-bold text-slate-800 tabular-nums mt-0.5">00h 00m 00s</p>
+                    </div>
+
+                    <div class="p-4 sm:p-6 space-y-4">
+                        <div>
+                            <div class="flex flex-wrap items-center justify-between mb-1.5 gap-2">
+                                <label for="select-empleado" class="block text-xs font-semibold uppercase tracking-wider text-slate-600">Empleado</label>
+                                <div class="flex items-center gap-1.5">
+                                    <button type="button" onclick="abrirModalEmpleado()" class="min-h-[36px] px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-emerald-50 text-xs font-semibold text-slate-700 hover:text-emerald-700 inline-flex items-center gap-1.5 transition-colors">+ Nuevo</button>
+                                    <button type="button" onclick="abrirModalGestionEmpleados()" class="min-h-[36px] px-2.5 py-1 rounded-lg bg-slate-100 hover:bg-rose-50 text-xs font-semibold text-slate-700 hover:text-rose-700 inline-flex items-center gap-1.5 transition-colors">Gestionar</button>
+                                </div>
+                            </div>
+                            <div id="contenedor-select-empleado" class="relative">
+                                <select id="select-empleado" onchange="cambiarEmpleadoActivo()" class="w-full min-h-[48px] appearance-none bg-slate-50 border border-slate-300 text-slate-800 text-base font-medium rounded-xl px-4 py-2.5 pr-10 focus:outline-none focus:ring-2 focus:ring-slate-800"></select>
+                                <div class="pointer-events-none absolute inset-y-0 right-0 flex items-center px-3.5 text-slate-500">
+                                    <svg aria-hidden="true" class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="6 9 12 15 18 9"></polyline></svg>
+                                </div>
+                            </div>
+                            <div id="aviso-sin-empleados" class="hidden mt-2 p-3.5 rounded-xl bg-amber-50 border border-amber-200 flex items-center justify-between gap-3">
+                                <div class="text-xs text-amber-900">
+                                    <p class="font-bold">No hay empleados registrados</p>
+                                    <p class="text-amber-700 mt-0.5">Agregue un primer empleado para comenzar.</p>
+                                </div>
+                                <button type="button" onclick="abrirModalEmpleado()" class="min-h-[40px] px-3 py-1.5 rounded-lg bg-emerald-600 text-white text-xs font-bold">+ Agregar</button>
+                            </div>
+                        </div>
+
+                        <div>
+                            <label for="input-notas" class="block text-xs font-semibold uppercase tracking-wider text-slate-600 mb-1.5">Observaciones / Notas</label>
+                            <input type="text" id="input-notas" placeholder="Ej. Trabajo remoto, Reunión..." maxlength="80" class="w-full min-h-[48px] bg-slate-50 border border-slate-300 text-slate-800 text-base rounded-xl px-4 py-2.5 focus:outline-none focus:ring-2 focus:ring-slate-800">
+                        </div>
+
+                        <div class="pt-1 space-y-2.5">
+                            <p class="text-xs font-semibold uppercase tracking-wider text-slate-500">Acciones de Fichaje</p>
+                            <div class="grid grid-cols-1 sm:grid-cols-2 gap-3">
+                                <button id="btn-entrada" onclick="registrarMarca('Entrada')" class="min-h-[56px] flex items-center justify-center gap-2.5 py-3.5 px-4 rounded-xl font-bold text-base text-white bg-emerald-600 hover:bg-emerald-700 disabled:opacity-40 transition-all shadow-sm">
+                                    <span id="texto-btn-entrada">Registrar Entrada</span>
+                                </button>
+                                <button id="btn-salida" onclick="registrarMarca('Salida')" class="min-h-[56px] flex items-center justify-center gap-2 py-3 px-3.5 rounded-xl font-bold text-base text-white bg-rose-600 hover:bg-rose-700 disabled:opacity-40 transition-all shadow-sm">Registrar Salida</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="lg:col-span-7 space-y-5 flex flex-col">
+                <div class="grid grid-cols-2 sm:grid-cols-4 gap-3">
+                    <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                        <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Entradas Hoy</p>
+                        <p id="resumen-entradas-hoy" class="text-2xl font-extrabold text-slate-900 tabular-nums mt-2">0</p>
+                        <p id="resumen-empleado-estado-texto" class="text-[11px] text-slate-400 mt-0.5 truncate">Sin ingreso hoy</p>
+                    </div>
+                    <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                        <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">A Tiempo</p>
+                        <p id="resumen-atiempo-hoy" class="text-2xl font-extrabold text-emerald-600 tabular-nums mt-2">0</p>
+                        <p id="resumen-puntualidad-empleado" class="text-[11px] text-slate-500 font-medium mt-0.5 truncate">Empleado: Sin ingreso</p>
+                    </div>
+                    <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                        <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">Atrasos</p>
+                        <p id="resumen-atrasos-hoy" class="text-2xl font-extrabold text-rose-600 tabular-nums mt-2">0</p>
+                        <button type="button" onclick="abrirModalPuntualidad()" class="text-left text-[11px] text-amber-700 hover:underline font-semibold mt-0.5 truncate">Regla: <span id="resumen-regla-activa">09:00 (+5m)</span></button>
+                    </div>
+                    <div class="bg-white p-3.5 sm:p-4 rounded-2xl border border-slate-200 shadow-sm flex flex-col justify-between">
+                        <p class="text-[11px] font-semibold uppercase tracking-wider text-slate-500">En Turno</p>
+                        <p id="resumen-activos-ahora" class="text-2xl font-extrabold text-sky-600 tabular-nums mt-2">0</p>
+                        <p id="resumen-total-plantilla" class="text-[11px] text-slate-400 mt-0.5 truncate">De 0 registrados</p>
+                    </div>
+                </div>
+
+                <div class="bg-white rounded-2xl shadow-sm border border-slate-200 flex-grow flex flex-col overflow-hidden">
+                    <div class="p-4 sm:p-5 border-b border-slate-200 flex flex-col sm:flex-row sm:items-center justify-between gap-3">
+                        <h2 class="font-bold text-slate-900 text-base">Historial de Asistencia</h2>
+                        <div class="flex flex-wrap items-center gap-2">
+                            <button onclick="exportarCSV()" class="min-h-[42px] px-3.5 py-2 rounded-xl text-xs font-semibold bg-slate-900 text-white transition-all">Descargar CSV</button>
+                            <button onclick="copiarCSVPortapapeles()" class="min-h-[42px] px-3 py-2 rounded-xl text-xs font-semibold bg-slate-100 text-slate-700 border border-slate-300">Copiar CSV</button>
+                            <button onclick="abrirModalConfirmacion()" class="min-h-[42px] px-3 py-2 rounded-xl text-xs font-semibold bg-rose-50 text-rose-600 border border-rose-200">Limpiar</button>
+                        </div>
+                    </div>
+
+                    <div class="bg-slate-50 px-4 sm:px-5 py-3.5 border-b border-slate-200 grid grid-cols-1 sm:grid-cols-3 gap-2.5">
+                        <select id="filtro-empleado" onchange="renderizarHistorial()" class="w-full min-h-[44px] bg-white border border-slate-300 text-slate-700 text-base sm:text-xs font-medium rounded-xl px-3 py-2">
+                            <option value="TODOS">Todos los empleados</option>
+                        </select>
+                        <input type="date" id="filtro-fecha" onchange="renderizarHistorial()" class="w-full min-h-[44px] bg-white border border-slate-300 text-slate-700 text-base sm:text-xs font-medium rounded-xl px-3 py-2">
+                        <button onclick="limpiarFiltros()" class="w-full min-h-[44px] bg-white text-slate-700 border border-slate-300 text-xs font-semibold py-2 px-3 rounded-xl">Mostrar todos</button>
+                    </div>
+
+                    <div id="lista-tarjetas-movil" class="sm:hidden divide-y divide-slate-200"></div>
+
+                    <div class="hidden sm:block overflow-x-auto flex-grow">
+                        <table class="w-full text-left border-collapse">
+                            <thead>
+                                <tr class="bg-slate-50/80 border-b border-slate-200 text-[11px] font-bold uppercase tracking-wider text-slate-500">
+                                    <th class="py-3 px-4">Fecha</th>
+                                    <th class="py-3 px-4">Empleado</th>
+                                    <th class="py-3 px-4">Tipo</th>
+                                    <th class="py-3 px-4">Hora / Estado</th>
+                                    <th class="py-3 px-4">Notas</th>
+                                    <th class="py-3 px-4 text-right">Duración</th>
+                                </tr>
+                            </thead>
+                            <tbody id="tbody-historial" class="divide-y divide-slate-100 text-xs sm:text-sm"></tbody>
+                        </table>
+                    </div>
+
+                    <div id="estado-vacio" class="hidden py-12 px-4 text-center">
+                        <p class="text-sm font-semibold text-slate-700">No se encontraron registros</p>
+                    </div>
+
+                    <div class="px-4 sm:px-5 py-3 bg-slate-50 border-t border-slate-200 text-xs text-slate-500">
+                        <span id="contador-registros">0 registros mostrados</span>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Modal Empleado -->
+    <div id="modal-empleado" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-empleado" class="fixed inset-0 z-50 hidden bg-slate-900/60 flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white rounded-t-3xl sm:rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 animate-slide-up">
+            <h3 id="titulo-modal-empleado" class="text-base font-bold text-slate-900 mb-4">Registrar Nuevo Empleado</h3>
+            <form onsubmit="guardarNuevoEmpleado(event)" class="space-y-4">
+                <div>
+                    <label for="nuevo-emp-nombre" class="block text-xs font-semibold uppercase text-slate-600 mb-1.5">Nombre Completo</label>
+                    <input type="text" id="nuevo-emp-nombre" required minlength="2" maxlength="60" class="w-full min-h-[48px] bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-base">
+                </div>
+                <div>
+                    <label for="nuevo-emp-id" class="block text-xs font-semibold uppercase text-slate-600 mb-1.5">ID / Código</label>
+                    <input type="text" id="nuevo-emp-id" required pattern="[A-Za-z0-9_\-]{2,20}" title="2 a 20 caracteres: letras, números, guion o guion bajo" class="w-full min-h-[48px] bg-slate-50 border border-slate-300 rounded-xl px-3.5 py-2.5 text-base">
+                    <p class="text-[10px] text-slate-400 mt-1">Solo letras, números, guion y guion bajo (2–20).</p>
+                </div>
+                <div class="flex justify-end gap-2.5 pt-2">
+                    <button type="button" onclick="cerrarModalEmpleado()" class="px-4 py-2.5 text-sm font-semibold text-slate-600">Cancelar</button>
+                    <button type="submit" class="px-5 py-2.5 text-sm font-semibold bg-emerald-600 text-white rounded-xl">Guardar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Puntualidad -->
+    <div id="modal-puntualidad" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-puntualidad" class="fixed inset-0 z-50 hidden bg-slate-900/60 flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white rounded-t-3xl sm:rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 animate-slide-up">
+            <h3 id="titulo-modal-puntualidad" class="text-base font-bold text-slate-900 mb-4">Configurar Puntualidad</h3>
+
+            <!-- Paso 1: verificar clave -->
+            <form id="form-verificar-clave" onsubmit="verificarClavePuntualidad(event)" class="space-y-4">
+                <p class="text-xs text-slate-600">Ingrese la clave de administrador para continuar.</p>
+                <input type="password" id="input-clave-admin" required class="w-full min-h-[48px] bg-slate-50 border border-slate-300 rounded-xl px-4 text-base">
+                <p id="error-clave-admin" class="hidden text-xs text-rose-600">Clave incorrecta.</p>
+                <div class="flex justify-end gap-2.5">
+                    <button type="button" onclick="cerrarModalPuntualidad()" class="px-4 py-2.5 text-sm text-slate-600">Cancelar</button>
+                    <button type="submit" class="px-5 py-2.5 text-sm bg-slate-900 text-white rounded-xl">Desbloquear</button>
+                </div>
+            </form>
+
+            <!-- Paso 2: configuración -->
+            <form id="form-config-puntualidad" onsubmit="guardarConfigPuntualidad(event)" class="hidden space-y-4">
+                <div>
+                    <label for="config-hora-esperada" class="block text-xs font-semibold uppercase text-slate-600 mb-1">Hora Entrada Esperada</label>
+                    <input type="time" id="config-hora-esperada" required class="w-full min-h-[48px] bg-slate-50 border border-slate-300 rounded-xl px-3.5 text-base">
+                </div>
+                <div>
+                    <label for="config-tolerancia-min" class="block text-xs font-semibold uppercase text-slate-600 mb-1">Tolerancia (min)</label>
+                    <input type="number" id="config-tolerancia-min" min="0" max="120" required class="w-full min-h-[48px] bg-slate-50 border border-slate-300 rounded-xl px-3.5 text-base">
+                </div>
+                <div class="pt-2 border-t border-slate-200">
+                    <button type="button" onclick="abrirFormCambiarClave()" class="w-full text-left text-xs text-amber-700 hover:text-amber-900 font-semibold py-1">
+                        🔑 Cambiar contraseña de administrador →
+                    </button>
+                </div>
+                <div class="flex justify-end gap-2.5">
+                    <button type="button" onclick="cerrarModalPuntualidad()" class="px-4 py-2.5 text-sm text-slate-600">Cancelar</button>
+                    <button type="submit" class="px-5 py-2.5 text-sm bg-emerald-600 text-white rounded-xl">Guardar</button>
+                </div>
+            </form>
+
+            <!-- Paso 3: cambiar contraseña -->
+            <form id="form-cambiar-clave" onsubmit="guardarNuevaClave(event)" class="hidden space-y-4">
+                <button type="button" onclick="volverFormConfig()" class="text-xs text-slate-600 hover:text-slate-900 font-medium">← Volver a configuración</button>
+                <div>
+                    <label for="config-nueva-clave" class="block text-xs font-semibold uppercase text-slate-600 mb-1">Nueva contraseña</label>
+                    <input type="password" id="config-nueva-clave" required minlength="4" maxlength="32" autocomplete="new-password" class="w-full min-h-[48px] bg-slate-50 border border-slate-300 rounded-xl px-3.5 text-base">
+                </div>
+                <div>
+                    <label for="config-confirmar-clave" class="block text-xs font-semibold uppercase text-slate-600 mb-1">Confirmar contraseña</label>
+                    <input type="password" id="config-confirmar-clave" required minlength="4" maxlength="32" autocomplete="new-password" class="w-full min-h-[48px] bg-slate-50 border border-slate-300 rounded-xl px-3.5 text-base">
+                    <p id="error-nueva-clave" class="hidden text-xs text-rose-600 mt-1">Las contraseñas no coinciden.</p>
+                </div>
+                <div class="flex justify-end gap-2.5">
+                    <button type="button" onclick="cerrarModalPuntualidad()" class="px-4 py-2.5 text-sm text-slate-600">Cancelar</button>
+                    <button type="submit" class="px-5 py-2.5 text-sm bg-emerald-600 text-white rounded-xl">Actualizar</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Modal Gestión Empleados -->
+    <div id="modal-gestion-empleados" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-gestion" class="fixed inset-0 z-50 hidden bg-slate-900/60 flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white rounded-t-3xl sm:rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 animate-slide-up max-h-[85vh] flex flex-col">
+            <h3 id="titulo-modal-gestion" class="text-base font-bold text-slate-900 mb-4">Gestionar Empleados</h3>
+            <div id="lista-gestion-empleados" class="divide-y divide-slate-100 border border-slate-200 rounded-xl overflow-y-auto flex-grow bg-slate-50 p-2"></div>
+            <div class="flex justify-end pt-4">
+                <button type="button" onclick="cerrarModalGestionEmpleados()" class="px-4 py-2 text-xs font-semibold text-slate-700 bg-slate-100 rounded-xl">Cerrar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Eliminar Empleado -->
+    <div id="modal-eliminar-empleado" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-eliminar-emp" class="fixed inset-0 z-50 hidden bg-slate-900/60 flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white rounded-t-3xl sm:rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 animate-slide-up">
+            <h3 id="titulo-modal-eliminar-emp" class="text-base font-bold text-slate-900 mb-2">¿Eliminar empleado?</h3>
+            <p id="eliminar-emp-nombre-texto" class="text-xs text-slate-600 mb-4"></p>
+            <div class="space-y-2 mb-4">
+                <label class="flex items-start gap-2 p-3 rounded-xl border bg-slate-50 cursor-pointer text-xs">
+                    <input type="radio" name="opcion-borrado-empleado" value="mantener" checked class="mt-0.5">
+                    <span>Conservar sus registros históricos</span>
+                </label>
+                <label class="flex items-start gap-2 p-3 rounded-xl border bg-rose-50 cursor-pointer text-xs">
+                    <input type="radio" name="opcion-borrado-empleado" value="borrar_todo" class="mt-0.5">
+                    <span>Eliminar empleado y todo su historial</span>
+                </label>
+            </div>
+            <div class="flex justify-end gap-2.5">
+                <button onclick="cerrarModalEliminarEmpleado()" class="px-4 py-2.5 text-sm text-slate-600">Cancelar</button>
+                <button onclick="confirmarEliminarEmpleado()" class="px-5 py-2.5 text-sm bg-rose-600 text-white rounded-xl">Eliminar</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Modal Limpiar Historial -->
+    <div id="modal-confirmacion" role="dialog" aria-modal="true" aria-labelledby="titulo-modal-confirmacion" class="fixed inset-0 z-50 hidden bg-slate-900/60 flex items-end sm:items-center justify-center p-0 sm:p-4">
+        <div class="bg-white rounded-t-3xl sm:rounded-2xl max-w-md w-full p-6 shadow-xl border border-slate-200 animate-slide-up">
+            <h3 id="titulo-modal-confirmacion" class="text-base font-bold text-slate-900 mb-2">¿Eliminar todos los registros?</h3>
+            <p class="text-xs text-slate-500 mb-4">Esta acción borrará permanentemente todo el historial.</p>
+            <div class="flex justify-end gap-2.5">
+                <button onclick="cerrarModalConfirmacion()" class="px-4 py-2.5 text-sm text-slate-600">Cancelar</button>
+                <button onclick="confirmarLimpiarHistorial()" class="px-5 py-2.5 text-sm bg-rose-600 text-white rounded-xl">Sí, borrar todo</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast -->
+    <div id="toast-notificacion" role="status" aria-live="polite" class="fixed bottom-4 left-3 right-3 sm:left-auto sm:right-5 sm:bottom-5 z-50 transform translate-y-28 opacity-0 transition-all duration-300 pointer-events-none sm:max-w-sm bg-slate-900 text-white px-4 py-3.5 rounded-2xl shadow-xl flex items-center gap-3">
+        <div class="flex-grow min-w-0">
+            <p id="toast-titulo" class="text-xs font-bold truncate"></p>
+            <p id="toast-mensaje" class="text-[11px] text-slate-200 mt-0.5"></p>
+        </div>
+    </div>
+
+    <script>
+        const STORAGE_EMPLEADOS = 'controlasistencia_empleados_v1';
+        const STORAGE_REGISTROS = 'controlasistencia_registros_v1';
+        const STORAGE_EMPLEADO_ACTIVO = 'controlasistencia_activo_v1';
+        const STORAGE_CONFIG_PUNTUALIDAD = 'asistencia_config_v1';
+
+        const EMPLEADOS_POR_DEFECTO = [
+            { id: 'EMP-001', nombre: 'Ana García', cargo: 'Administración' },
+            { id: 'EMP-002', nombre: 'Carlos Mendoza', cargo: 'Operaciones' }
+        ];
+
+        const CONFIG_POR_DEFECTO = { horaEsperada: '09:00', toleranciaMin: 5, claveAdmin: '1234' };
+
+        let empleados = [];
+        let registros = [];
+        let empleadoActivoId = '';
+        let empleadoAEliminarId = null;
+        let configPuntualidad = { ...CONFIG_POR_DEFECTO };
+
+        // ===== Utilidades =====
+        function esc(s) {
+            return String(s ?? '').replace(/[&<>"']/g, c => ({
+                '&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'
+            }[c]));
+        }
+
+        function esRegistroValido(r) {
+            return r && (r.tipo === 'Entrada' || r.tipo === 'Salida');
+        }
+
+        function obtenerFechaISO(d = new Date()) {
+            const y = d.getFullYear();
+            const m = String(d.getMonth() + 1).padStart(2, '0');
+            const dia = String(d.getDate()).padStart(2, '0');
+            return `${y}-${m}-${dia}`;
+        }
+
+        function formatearHoraHHMMSS(d) {
+            return String(d.getHours()).padStart(2, '0') + ':' +
+                   String(d.getMinutes()).padStart(2, '0') + ':' +
+                   String(d.getSeconds()).padStart(2, '0');
+        }
+
+        function formatearDuracion(ms, formatoCorto = false) {
+            if (ms < 0) ms = 0;
+            const segundos = Math.floor(ms / 1000);
+            const horas = Math.floor(segundos / 3600);
+            const minutos = Math.floor((segundos % 3600) / 60);
+            const segs = segundos % 60;
+            if (formatoCorto) {
+                return `${String(horas).padStart(2, '0')}h ${String(minutos).padStart(2, '0')}m ${String(segs).padStart(2, '0')}s`;
+            }
+            return `${horas}h ${minutos}m`;
+        }
+
+        // ===== Persistencia segura =====
+        function safeSet(key, value) {
+            try {
+                localStorage.setItem(key, value);
+                return true;
+            } catch (e) {
+                console.error('localStorage.setItem falló:', e);
+                mostrarToast('Error de guardado', 'Exporta y limpia el historial para liberar espacio', 'error');
+                return false;
+            }
+        }
+        function guardarEmpleados() { return safeSet(STORAGE_EMPLEADOS, JSON.stringify(empleados)); }
+        function guardarRegistros() { return safeSet(STORAGE_REGISTROS, JSON.stringify(registros)); }
+        function guardarConfig() { return safeSet(STORAGE_CONFIG_PUNTUALIDAD, JSON.stringify(configPuntualidad)); }
+
+        // ===== Carga + migración =====
+        function cargarDatos() {
+            try {
+                const emp = localStorage.getItem(STORAGE_EMPLEADOS);
+                empleados = emp ? JSON.parse(emp) : [...EMPLEADOS_POR_DEFECTO];
+                if (!Array.isArray(empleados)) empleados = [...EMPLEADOS_POR_DEFECTO];
+            } catch { empleados = [...EMPLEADOS_POR_DEFECTO]; }
+
+            try {
+                const reg = localStorage.getItem(STORAGE_REGISTROS);
+                registros = reg ? JSON.parse(reg) : [];
+                if (!Array.isArray(registros)) registros = [];
+            } catch { registros = []; }
+
+            try {
+                const conf = localStorage.getItem(STORAGE_CONFIG_PUNTUALIDAD);
+                if (conf) configPuntualidad = { ...CONFIG_POR_DEFECTO, ...JSON.parse(conf) };
+            } catch { configPuntualidad = { ...CONFIG_POR_DEFECTO }; }
+
+            try {
+                const activo = localStorage.getItem(STORAGE_EMPLEADO_ACTIVO);
+                empleadoActivoId = activo && empleados.some(e => e.id === activo)
+                    ? activo
+                    : (empleados[0]?.id || '');
+            } catch { empleadoActivoId = empleados[0]?.id || ''; }
+
+            migrarRegistros();
+        }
+
+        function migrarRegistros() {
+            let huboCambios = false;
+            const antes = registros.length;
+
+            registros = registros.filter(esRegistroValido);
+            if (registros.length !== antes) huboCambios = true;
+
+            registros.forEach(r => {
+                if (typeof r.timestamp !== 'number') return;
+                const correcta = obtenerFechaISO(new Date(r.timestamp));
+                if (r.fechaISO !== correcta) {
+                    r.fechaISO = correcta;
+                    huboCambios = true;
+                }
+            });
+
+            if (huboCambios) {
+                guardarRegistros();
+                console.info('Migración aplicada a registros locales.');
+            }
+        }
+
+        // ===== Selectores =====
+        function poblarSelectoresEmpleados() {
+            const select = document.getElementById('select-empleado');
+            const filtro = document.getElementById('filtro-empleado');
+            const aviso = document.getElementById('aviso-sin-empleados');
+            const contenedor = document.getElementById('contenedor-select-empleado');
+            const filtroPrevio = filtro.value || 'TODOS';
+
+            select.innerHTML = '';
+            filtro.innerHTML = '<option value="TODOS">Todos los empleados</option>';
+
+            if (empleados.length === 0) {
+                contenedor.classList.add('hidden');
+                aviso.classList.remove('hidden');
+                empleadoActivoId = '';
+            } else {
+                contenedor.classList.remove('hidden');
+                aviso.classList.add('hidden');
+                if (!empleados.some(e => e.id === empleadoActivoId)) {
+                    empleadoActivoId = empleados[0].id;
+                }
+                empleados.forEach(e => {
+                    const txt = `${e.nombre} (${e.id})`;
+                    const opt1 = document.createElement('option');
+                    opt1.value = e.id;
+                    opt1.textContent = txt;
+                    if (e.id === empleadoActivoId) opt1.selected = true;
+                    select.appendChild(opt1);
+
+                    const opt2 = document.createElement('option');
+                    opt2.value = e.id;
+                    opt2.textContent = txt;
+                    filtro.appendChild(opt2);
+                });
+            }
+            filtro.value = filtroPrevio;
+        }
+
+        function cambiarEmpleadoActivo() {
+            empleadoActivoId = document.getElementById('select-empleado').value;
+            safeSet(STORAGE_EMPLEADO_ACTIVO, empleadoActivoId);
+            actualizarInterfazCompleta();
+        }
+
+        // ===== Métricas =====
+        function calcularMetricasEmpleado(empId, fechaISO = obtenerFechaISO()) {
+            if (!empId) return { estadoActual: 'Fuera de turno', msTrabajados: 0, marcasDia: [] };
+
+            const marcasDia = registros
+                .filter(r => r.empleadoId === empId && r.fechaISO === fechaISO && esRegistroValido(r))
+                .sort((a, b) => a.timestamp - b.timestamp);
+
+            let estadoActual = 'Fuera de turno';
+            let msTrabajados = 0;
+            let inicioSegmento = null;
+
+            marcasDia.forEach(m => {
+                if (m.tipo === 'Entrada') {
+                    inicioSegmento = m.timestamp;
+                    estadoActual = 'Trabajando';
+                } else if (m.tipo === 'Salida') {
+                    if (inicioSegmento) msTrabajados += (m.timestamp - inicioSegmento);
+                    inicioSegmento = null;
+                    estadoActual = 'Fuera de turno';
+                }
+            });
+
+            if (inicioSegmento) msTrabajados += (Date.now() - inicioSegmento);
+
+            return { estadoActual, msTrabajados, marcasDia };
+        }
+
+        function evaluarPuntualidadTimestamp(timestamp) {
+            const fecha = new Date(timestamp);
+            const minEntrada = fecha.getHours() * 60 + fecha.getMinutes();
+            const [hEsp, mEsp] = configPuntualidad.horaEsperada.split(':').map(Number);
+            const minEsperados = hEsp * 60 + mEsp;
+            const minLimite = minEsperados + Number(configPuntualidad.toleranciaMin || 0);
+
+            if (minEntrada <= minLimite) {
+                return { esAtraso: false, etiqueta: 'A tiempo' };
+            }
+            const retraso = minEntrada - minEsperados;
+            return { esAtraso: true, etiqueta: `Atraso (+${retraso} min)` };
+        }
+
+        // ===== Fichaje =====
+        function registrarMarca(tipo) {
+            if (!empleadoActivoId) return;
+            const emp = empleados.find(e => e.id === empleadoActivoId);
+            if (!emp) return;
+
+            const metricas = calcularMetricasEmpleado(emp.id);
+            const estado = metricas.estadoActual;
+
+            if (tipo === 'Entrada' && estado !== 'Fuera de turno') return;
+            if (tipo === 'Salida' && estado === 'Fuera de turno') return;
+
+            const ahora = new Date();
+            let estadoPuntualidad = '';
+            if (tipo === 'Entrada') {
+                const yaTiene = metricas.marcasDia.some(m => m.tipo === 'Entrada');
+                estadoPuntualidad = yaTiene
+                    ? 'Reingreso'
+                    : evaluarPuntualidadTimestamp(ahora.getTime()).etiqueta;
+            }
+
+            let duracion = '—';
+            if (tipo === 'Salida') duracion = formatearDuracion(metricas.msTrabajados, false);
+
+            const reg = {
+                id: 'REG-' + Date.now(),
+                timestamp: ahora.getTime(),
+                fechaISO: obtenerFechaISO(ahora),
+                fechaLegible: ahora.toLocaleDateString('es-ES'),
+                empleadoId: emp.id,
+                empleadoNombre: emp.nombre,
+                tipo: tipo,
+                hora: formatearHoraHHMMSS(ahora),
+                notas: document.getElementById('input-notas').value.trim(),
+                duracionTurno: duracion,
+                estadoPuntualidad: estadoPuntualidad
+            };
+
+            registros.unshift(reg);
+            if (!guardarRegistros()) {
+                registros.shift();
+                return;
+            }
+            document.getElementById('input-notas').value = '';
+            actualizarInterfazCompleta();
+            mostrarToast('Registrado', `${emp.nombre} - ${tipo}`);
+        }
+
+        // ===== Reloj + timers =====
+        function actualizarRelojYTimers() {
+            const ahora = new Date();
+            document.getElementById('reloj-digital').textContent = formatearHoraHHMMSS(ahora);
+            document.getElementById('fecha-actual').textContent = ahora.toLocaleDateString('es-ES', {
+                weekday: 'long', year: 'numeric', month: 'long', day: 'numeric'
+            });
+
+            const metricas = calcularMetricasEmpleado(empleadoActivoId);
+            document.getElementById('cronometro-jornada').textContent = formatearDuracion(metricas.msTrabajados, true);
+        }
+
+        // ===== Interfaz =====
+        function actualizarInterfazCompleta() {
+            const btnEntrada = document.getElementById('btn-entrada');
+            const textoBtnEntrada = document.getElementById('texto-btn-entrada');
+            const btnSalida = document.getElementById('btn-salida');
+            const textoEstado = document.getElementById('texto-estado');
+
+            document.getElementById('header-regla-puntualidad').textContent = `${configPuntualidad.horaEsperada} +${configPuntualidad.toleranciaMin}m`;
+            document.getElementById('resumen-regla-activa').textContent = `${configPuntualidad.horaEsperada} (+${configPuntualidad.toleranciaMin}m)`;
+
+            if (!empleadoActivoId) {
+                textoEstado.textContent = 'Sin empleado';
+                btnEntrada.disabled = true;
+                btnSalida.disabled = true;
+                actualizarResumenGlobal();
+                renderizarHistorial();
+                return;
+            }
+
+            const m = calcularMetricasEmpleado(empleadoActivoId);
+            textoEstado.textContent = m.estadoActual;
+
+            if (m.estadoActual === 'Fuera de turno') {
+                textoBtnEntrada.textContent = 'Registrar Entrada';
+                btnEntrada.disabled = false;
+                btnSalida.disabled = true;
+            } else {
+                textoBtnEntrada.textContent = 'Turno en Curso';
+                btnEntrada.disabled = true;
+                btnSalida.disabled = false;
+            }
+
+            actualizarResumenGlobal();
+            renderizarHistorial();
+        }
+
+        function actualizarResumenGlobal() {
+            const hoy = obtenerFechaISO();
+            const primeras = {};
+            registros.filter(r => r.fechaISO === hoy && r.tipo === 'Entrada').forEach(r => {
+                if (!primeras[r.empleadoId]) primeras[r.empleadoId] = r;
+            });
+
+            const lista = Object.values(primeras);
+            let aTime = 0, atrasos = 0;
+            lista.forEach(r => {
+                if (evaluarPuntualidadTimestamp(r.timestamp).esAtraso) atrasos++;
+                else aTime++;
+            });
+
+            let enTurno = 0;
+            empleados.forEach(e => {
+                if (calcularMetricasEmpleado(e.id, hoy).estadoActual !== 'Fuera de turno') enTurno++;
+            });
+
+            document.getElementById('resumen-entradas-hoy').textContent = lista.length;
+            document.getElementById('resumen-atiempo-hoy').textContent = aTime;
+            document.getElementById('resumen-atrasos-hoy').textContent = atrasos;
+            document.getElementById('resumen-activos-ahora').textContent = enTurno;
+            document.getElementById('resumen-total-plantilla').textContent = `De ${empleados.length} registrados`;
+        }
+
+        function renderizarHistorial() {
+            const filtroEmp = document.getElementById('filtro-empleado').value;
+            const filtroFec = document.getElementById('filtro-fecha').value;
+            const tbody = document.getElementById('tbody-historial');
+            const listaMovil = document.getElementById('lista-tarjetas-movil');
+            const estadoVacio = document.getElementById('estado-vacio');
+
+            tbody.innerHTML = '';
+            listaMovil.innerHTML = '';
+
+            const filtrados = registros.filter(r => {
+                if (!esRegistroValido(r)) return false;
+                if (filtroEmp !== 'TODOS' && r.empleadoId !== filtroEmp) return false;
+                if (filtroFec && r.fechaISO !== filtroFec) return false;
+                return true;
+            });
+
+            document.getElementById('contador-registros').textContent = `${filtrados.length} registros mostrados`;
+
+            if (filtrados.length === 0) {
+                estadoVacio.classList.remove('hidden');
+                return;
+            }
+            estadoVacio.classList.add('hidden');
+
+            filtrados.forEach(r => {
+                let badgeP = '';
+                if (r.tipo === 'Entrada' && r.estadoPuntualidad) {
+                    const esA = r.estadoPuntualidad.startsWith('Atraso');
+                    badgeP = `<span class="inline-flex px-2 py-0.5 rounded text-[10px] font-bold ${esA ? 'bg-rose-50 text-rose-700' : 'bg-emerald-50 text-emerald-700'}">${esc(r.estadoPuntualidad)}</span>`;
+                }
+
+                const tr = document.createElement('tr');
+                tr.className = 'hover:bg-slate-50';
+                tr.innerHTML = `
+                    <td class="py-3 px-4">${esc(r.fechaLegible)}</td>
+                    <td class="py-3 px-4 font-semibold">${esc(r.empleadoNombre)}</td>
+                    <td class="py-3 px-4"><span class="px-2 py-1 rounded bg-slate-100 text-xs">${esc(r.tipo)}</span></td>
+                    <td class="py-3 px-4">${esc(r.hora)} ${badgeP}</td>
+                    <td class="py-3 px-4 truncate max-w-[150px]">${esc(r.notas) || '—'}</td>
+                    <td class="py-3 px-4 text-right">${esc(r.duracionTurno)}</td>
+                `;
+                tbody.appendChild(tr);
+
+                const card = document.createElement('div');
+                card.className = 'p-4 bg-white space-y-2';
+                card.innerHTML = `
+                    <div class="flex justify-between items-center">
+                        <span class="font-bold text-sm">${esc(r.empleadoNombre)}</span>
+                        <span class="font-mono text-sm bg-slate-100 px-2 py-0.5 rounded">${esc(r.hora)}</span>
+                    </div>
+                    <div class="flex items-center gap-2 text-xs">
+                        <span class="font-semibold text-slate-700">${esc(r.tipo)}</span>
+                        ${badgeP}
+                    </div>
+                    ${r.notas ? `<p class="text-xs text-slate-500">Nota: ${esc(r.notas)}</p>` : ''}
+                `;
+                listaMovil.appendChild(card);
+            });
+        }
+
+        function limpiarFiltros() {
+            document.getElementById('filtro-empleado').value = 'TODOS';
+            document.getElementById('filtro-fecha').value = '';
+            renderizarHistorial();
+        }
+
+        // ===== Empleado =====
+        function abrirModalEmpleado() {
+            document.getElementById('nuevo-emp-nombre').value = '';
+            document.getElementById('nuevo-emp-id').value = `EMP-${String(empleados.length + 1).padStart(3, '0')}`;
+            document.getElementById('modal-empleado').classList.remove('hidden');
+            setTimeout(() => document.getElementById('nuevo-emp-nombre').focus(), 50);
+        }
+        function cerrarModalEmpleado() { document.getElementById('modal-empleado').classList.add('hidden'); }
+
+        function guardarNuevoEmpleado(e) {
+            e.preventDefault();
+            const nombre = document.getElementById('nuevo-emp-nombre').value.trim();
+            const id = document.getElementById('nuevo-emp-id').value.trim().toUpperCase();
+
+            if (nombre.length < 2) {
+                mostrarToast('Error', 'Nombre demasiado corto', 'error');
+                return;
+            }
+            if (!/^[A-Z0-9_-]{2,20}$/.test(id)) {
+                mostrarToast('Error', 'ID inválido (2–20: A-Z, 0-9, _ , -)', 'error');
+                return;
+            }
+            if (empleados.some(emp => emp.id === id)) {
+                mostrarToast('Error', 'El ID ya existe', 'error');
+                return;
+            }
+
+            empleados.push({ id, nombre, cargo: '' });
+            if (!guardarEmpleados()) {
+                empleados.pop();
+                return;
+            }
+            empleadoActivoId = id;
+            safeSet(STORAGE_EMPLEADO_ACTIVO, id);
+            poblarSelectoresEmpleados();
+            actualizarInterfazCompleta();
+            cerrarModalEmpleado();
+            mostrarToast('Éxito', 'Empleado agregado');
+        }
+
+        // ===== Gestión empleados =====
+        function abrirModalGestionEmpleados() {
+            const contenedor = document.getElementById('lista-gestion-empleados');
+            contenedor.innerHTML = '';
+
+            if (empleados.length === 0) {
+                contenedor.innerHTML = '<p class="text-xs text-slate-500 text-center py-6">Sin empleados registrados.</p>';
+            } else {
+                empleados.forEach(e => {
+                    const div = document.createElement('div');
+                    div.className = 'flex items-center justify-between py-2 px-3';
+                    div.innerHTML = `
+                        <div class="min-w-0">
+                            <p class="font-bold text-xs truncate">${esc(e.nombre)}</p>
+                            <p class="text-[10px] text-slate-400 truncate">${esc(e.id)}</p>
+                        </div>
+                        <button type="button" class="px-2.5 py-1 text-xs bg-rose-50 text-rose-600 rounded-lg shrink-0 ml-2">Eliminar</button>
+                    `;
+                    div.querySelector('button').addEventListener('click', () => solicitarEliminarEmpleado(e.id));
+                    contenedor.appendChild(div);
+                });
+            }
+            document.getElementById('modal-gestion-empleados').classList.remove('hidden');
+        }
+        function cerrarModalGestionEmpleados() { document.getElementById('modal-gestion-empleados').classList.add('hidden'); }
+
+        function solicitarEliminarEmpleado(id) {
+            empleadoAEliminarId = id;
+            const emp = empleados.find(e => e.id === id);
+            if (!emp) return;
+            document.getElementById('eliminar-emp-nombre-texto').textContent = `Empleado: ${emp.nombre} (${emp.id})`;
+            document.querySelector('input[name="opcion-borrado-empleado"][value="mantener"]').checked = true;
+            cerrarModalGestionEmpleados();
+            document.getElementById('modal-eliminar-empleado').classList.remove('hidden');
+        }
+        function cerrarModalEliminarEmpleado() {
+            document.getElementById('modal-eliminar-empleado').classList.add('hidden');
+            empleadoAEliminarId = null;
+        }
+
+        function confirmarEliminarEmpleado() {
+            if (!empleadoAEliminarId) return;
+            const opcion = document.querySelector('input[name="opcion-borrado-empleado"]:checked').value;
+            const id = empleadoAEliminarId;
+
+            empleados = empleados.filter(e => e.id !== id);
+            guardarEmpleados();
+
+            if (opcion === 'borrar_todo') {
+                registros = registros.filter(r => r.empleadoId !== id);
+                guardarRegistros();
+            }
+
+            if (empleadoActivoId === id) {
+                empleadoActivoId = empleados[0]?.id || '';
+                safeSet(STORAGE_EMPLEADO_ACTIVO, empleadoActivoId);
+            }
+
+            poblarSelectoresEmpleados();
+            actualizarInterfazCompleta();
+            cerrarModalEliminarEmpleado();
+            mostrarToast('Eliminado', 'Empleado eliminado correctamente');
+        }
+
+        // ===== Puntualidad =====
+        function abrirModalPuntualidad() {
+            document.getElementById('form-verificar-clave').classList.remove('hidden');
+            document.getElementById('form-config-puntualidad').classList.add('hidden');
+            document.getElementById('form-cambiar-clave').classList.add('hidden');
+            document.getElementById('input-clave-admin').value = '';
+            document.getElementById('error-clave-admin').classList.add('hidden');
+            document.getElementById('modal-puntualidad').classList.remove('hidden');
+            setTimeout(() => document.getElementById('input-clave-admin').focus(), 50);
+        }
+        function cerrarModalPuntualidad() { document.getElementById('modal-puntualidad').classList.add('hidden'); }
+
+        function verificarClavePuntualidad(e) {
+            e.preventDefault();
+            const clave = document.getElementById('input-clave-admin').value.trim();
+            if (clave !== configPuntualidad.claveAdmin) {
+                document.getElementById('error-clave-admin').classList.remove('hidden');
+                return;
+            }
+            document.getElementById('config-hora-esperada').value = configPuntualidad.horaEsperada;
+            document.getElementById('config-tolerancia-min').value = configPuntualidad.toleranciaMin;
+            document.getElementById('form-verificar-clave').classList.add('hidden');
+            document.getElementById('form-config-puntualidad').classList.remove('hidden');
+        }
+
+        function guardarConfigPuntualidad(e) {
+            e.preventDefault();
+            const hora = document.getElementById('config-hora-esperada').value;
+            const tol = parseInt(document.getElementById('config-tolerancia-min').value, 10);
+
+            if (!/^\d{2}:\d{2}$/.test(hora)) {
+                mostrarToast('Error', 'Hora inválida', 'error');
+                return;
+            }
+            if (!Number.isFinite(tol) || tol < 0 || tol > 120) {
+                mostrarToast('Error', 'Tolerancia fuera de rango (0–120)', 'error');
+                return;
+            }
+
+            configPuntualidad.horaEsperada = hora;
+            configPuntualidad.toleranciaMin = tol;
+            guardarConfig();
+            cerrarModalPuntualidad();
+            actualizarInterfazCompleta();
+            mostrarToast('Configuración guardada', 'Puntualidad actualizada');
+        }
+
+        // === Cambio de contraseña ===
+        function abrirFormCambiarClave() {
+            document.getElementById('form-config-puntualidad').classList.add('hidden');
+            document.getElementById('form-cambiar-clave').classList.remove('hidden');
+            document.getElementById('config-nueva-clave').value = '';
+            document.getElementById('config-confirmar-clave').value = '';
+            document.getElementById('error-nueva-clave').classList.add('hidden');
+            setTimeout(() => document.getElementById('config-nueva-clave').focus(), 50);
+        }
+
+        function volverFormConfig() {
+            document.getElementById('form-cambiar-clave').classList.add('hidden');
+            document.getElementById('form-config-puntualidad').classList.remove('hidden');
+        }
+
+        function guardarNuevaClave(e) {
+            e.preventDefault();
+            const nueva = document.getElementById('config-nueva-clave').value;
+            const confirmar = document.getElementById('config-confirmar-clave').value;
+            const error = document.getElementById('error-nueva-clave');
+
+            if (nueva.length < 4) {
+                error.textContent = 'La contraseña debe tener al menos 4 caracteres.';
+                error.classList.remove('hidden');
+                return;
+            }
+            if (nueva !== confirmar) {
+                error.textContent = 'Las contraseñas no coinciden.';
+                error.classList.remove('hidden');
+                return;
+            }
+            error.classList.add('hidden');
+
+            configPuntualidad.claveAdmin = nueva;
+            if (!guardarConfig()) return;
+
+            document.getElementById('form-cambiar-clave').classList.add('hidden');
+            document.getElementById('form-config-puntualidad').classList.remove('hidden');
+            mostrarToast('Contraseña actualizada', 'La nueva clave está activa');
+        }
+
+        // ===== Limpiar historial =====
+        function abrirModalConfirmacion() { document.getElementById('modal-confirmacion').classList.remove('hidden'); }
+        function cerrarModalConfirmacion() { document.getElementById('modal-confirmacion').classList.add('hidden'); }
+        function confirmarLimpiarHistorial() {
+            registros = [];
+            guardarRegistros();
+            cerrarModalConfirmacion();
+            actualizarInterfazCompleta();
+            mostrarToast('Limpiado', 'Historial borrado');
+        }
+
+        // ===== Export =====
+        function exportarCSV() {
+            const validos = registros.filter(esRegistroValido);
+            const csv = '\uFEFF' + ['Fecha;ID;Empleado;Tipo;Hora;Puntualidad;Notas;Duración', ...validos.map(r =>
+                `"${r.fechaLegible}";"${r.empleadoId}";"${r.empleadoNombre}";"${r.tipo}";"${r.hora}";"${r.estadoPuntualidad || ''}";"${(r.notas || '').replace(/"/g, '""')}";"${r.duracionTurno}"`
+            )].join('\n');
+            const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = `asistencia_${obtenerFechaISO()}.csv`;
+            document.body.appendChild(a);
+            a.click();
+            document.body.removeChild(a);
+            setTimeout(() => URL.revokeObjectURL(url), 1000);
+        }
+
+        function copiarCSVPortapapeles() {
+            const validos = registros.filter(esRegistroValido);
+            const csv = validos.map(r => `${r.fechaLegible};${r.empleadoId};${r.empleadoNombre};${r.tipo};${r.hora};${r.estadoPuntualidad || ''};${r.duracionTurno}`).join('\n');
+            const ta = document.createElement('textarea');
+            ta.value = csv;
+            ta.style.position = 'fixed';
+            ta.style.opacity = '0';
+            document.body.appendChild(ta);
+            ta.select();
+            let ok = false;
+            try { ok = document.execCommand('copy'); } catch {}
+            document.body.removeChild(ta);
+            mostrarToast(ok ? 'Copiado' : 'Error', ok ? 'Datos copiados al portapapeles' : 'No se pudo copiar', ok ? 'ok' : 'error');
+        }
+
+        // ===== Toast =====
+        let toastTimeout = null;
+        function mostrarToast(titulo, mensaje, tipo = 'ok') {
+            const t = document.getElementById('toast-notificacion');
+            t.classList.remove('bg-slate-900', 'bg-rose-600');
+            t.classList.add(tipo === 'error' ? 'bg-rose-600' : 'bg-slate-900');
+            document.getElementById('toast-titulo').textContent = titulo;
+            document.getElementById('toast-mensaje').textContent = mensaje;
+            t.classList.remove('translate-y-28', 'opacity-0');
+            if (toastTimeout) clearTimeout(toastTimeout);
+            toastTimeout = setTimeout(() => t.classList.add('translate-y-28', 'opacity-0'), 3000);
+        }
+
+        // ===== Escape global =====
+        document.addEventListener('keydown', (e) => {
+            if (e.key !== 'Escape') return;
+            ['modal-empleado','modal-puntualidad','modal-gestion-empleados','modal-eliminar-empleado','modal-confirmacion']
+                .forEach(id => document.getElementById(id)?.classList.add('hidden'));
+        });
+
+        // ===== Arranque =====
+        document.addEventListener('DOMContentLoaded', () => {
+            cargarDatos();
+            poblarSelectoresEmpleados();
+            actualizarRelojYTimers();
+            actualizarInterfazCompleta();
+            setInterval(actualizarRelojYTimers, 1000);
+        });
+    </script>
+</body>
+</html>
